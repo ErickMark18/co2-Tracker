@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO2 Tracker Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-card: #1c1c1f;
+            --bg-card-hover: #242428;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --border-color: #27272a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-green), #16a34a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.yellow { color: var(--accent-yellow); }
+        .stat-value.red { color: var(--accent-red); }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .rankings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .ranking-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .ranking-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .ranking-position {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 24px;
+        }
+
+        .ranking-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .ranking-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .region-card {
+            background: linear-gradient(135deg, #1a2f1a 0%, #1c1c1f 100%);
+            border: 1px solid #22c55e33;
+        }
+
+        .region-card .card-title {
+            color: var(--accent-green);
+        }
+
+        .alternative-region {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .alt-region-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .alt-saving {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .alt-saving-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .alt-comparison {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .alt-comparison span {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-muted);
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .badge-preview {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .badge-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                        <circle cx="12" cy="12" r="4"/>
+                    </svg>
+                </div>
+                <h1>CO2 Tracker</h1>
+            </div>
+            <div id="lastUpdate" style="font-size: 0.75rem; color: var(--text-muted);"></div>
+        </header>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-label">Total Deploys</div>
+                <div class="stat-value" id="totalDeploys">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total CO2</div>
+                <div class="stat-value green" id="totalCo2">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Average CO2</div>
+                <div class="stat-value" id="avgCo2">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Best Region</div>
+                <div class="stat-value green" id="bestRegion">--</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Emissions Over Time</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="emissionsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Top Repos by CO2</span>
+                </div>
+                <div class="rankings-list" id="repoRankings">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Emissions by Region</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="regionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card region-card">
+                <div class="card-header">
+                    <span class="card-title">Alternative Region</span>
+                </div>
+                <div class="alternative-region">
+                    <div class="alt-region-name" id="altRegionName">--</div>
+                    <div class="alt-saving" id="altSaving">--</div>
+                    <div class="alt-saving-label">potential saving</div>
+                    <div class="alt-comparison" id="altComparison">
+                        <span>Current: <strong id="currentRegion">--</strong></span>
+                        <span>Alternative: <strong id="currentIntensity">--</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            CO2 Tracker | Tracking carbon footprint of deployments
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function fetchJSON(url) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('API error');
+                return await res.json();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function loadDashboard() {
+            const stats = await fetchJSON(`${API_BASE}/stats`);
+            const deploys = await fetchJSON(`${API_BASE}/deploys?limit=100`);
+
+            if (!stats || !deploys) {
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <p>No data yet. Make a deployment to see metrics.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('totalDeploys').textContent = stats.total_deploys;
+            document.getElementById('totalCo2').textContent = `${stats.total_co2_g.toFixed(1)} g`;
+            document.getElementById('avgCo2').textContent = `${stats.avg_co2_g.toFixed(1)} g`;
+
+            const bestRegion = Object.entries(stats.by_region || {})
+                .sort(([,a], [,b]) => a.total_co2_g / a.count - b.total_co2_g / b.count)[0];
+            document.getElementById('bestRegion').textContent = bestRegion ? bestRegion[0] : '--';
+
+            renderRepoRankings(stats.by_repo || {});
+            renderCharts(deploys.deploys, stats.by_region || {});
+            document.getElementById('lastUpdate').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+        }
+
+        function renderRepoRankings(byRepo) {
+            const container = document.getElementById('repoRankings');
+            const sorted = Object.entries(byRepo).sort(([,a], [,b]) => b.total_co2_g - a.total_co2_g).slice(0, 5);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No data yet</div>';
+                return;
+            }
+
+            container.innerHTML = sorted.map(([repo, data], i) => `
+                <div class="ranking-item">
+                    <div class="ranking-info">
+                        <span class="ranking-position">#${i + 1}</span>
+                        <span class="ranking-name">${repo}</span>
+                    </div>
+                    <span class="ranking-value">${data.total_co2_g.toFixed(1)} g</span>
+                </div>
+            `).join('');
+        }
+
+        function renderCharts(deploys, byRegion) {
+            const dailyData = {};
+            deploys.forEach(d => {
+                const day = new Date(d.timestamp).toISOString().slice(0, 10);
+                dailyData[day] = (dailyData[day] || 0) + d.co2_grams;
+            });
+            const days = Object.keys(dailyData).sort();
+            const dailyValues = days.map(d => dailyData[d]);
+
+            new Chart(document.getElementById('emissionsChart'), {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'CO2 (g)',
+                        data: dailyValues,
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#22c55e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } },
+                        y: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } }
+                    }
+                }
+            });
+
+            const regionLabels = Object.keys(byRegion);
+            const regionValues = regionLabels.map(r => byRegion[r].total_co2_g);
+
+            new Chart(document.getElementById('regionChart'), {
+                type: 'bar',
+                data: {
+                    labels: regionLabels,
+                    datasets: [{
+                        label: 'CO2 (g)',
+                        data: regionValues,
+                        backgroundColor: regionLabels.map((_, i) => `hsl(${142 + i * 20}, 70%, 50%)`),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#71717a' } },
+                        y: { grid: { color: '#27272a' }, ticks: { color: '#71717a' } }
+                    }
+                }
+            });
+        }
+
+        loadDashboard();
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>
