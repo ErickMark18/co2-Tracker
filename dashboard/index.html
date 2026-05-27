@@ -463,7 +463,7 @@
                     <div class="alt-saving-label">potential saving</div>
                     <div class="alt-comparison" id="altComparison">
                         <span>Current: <strong id="currentRegion">--</strong></span>
-                        <span>Alternative: <strong id="currentIntensity">--</strong></span>
+                        <span>Alternative: <strong id="altRegion">--</strong></span>
                     </div>
                 </div>
             </div>
@@ -697,6 +697,19 @@
             });
         }
 
+        async function loadAlternativeRegion(byRegion) {
+            if (!byRegion || Object.keys(byRegion).length === 0) return null;
+
+            const worstRegion = Object.entries(byRegion)
+                .sort(([,a], [,b]) => (b.total_co2_g / b.count) - (a.total_co2_g / a.count))[0];
+
+            if (!worstRegion) return null;
+
+            const region = worstRegion[0];
+            const data = await fetchJSON(`${API_BASE}/region/alternative?region=${encodeURIComponent(region)}&provider=aws`);
+            return data;
+        }
+
         async function loadDashboard() {
             const stats = await loadStats();
             const deploys = await loadDeploys();
@@ -731,6 +744,14 @@
             renderRepoRankings(stats.by_repo || {});
             renderEmissionsChart(deploys);
             renderRegionChart(stats.by_region || {});
+
+            const altRegion = await loadAlternativeRegion(stats.by_region);
+            if (altRegion && altRegion.alternative_region) {
+                document.getElementById('altRegionName').textContent = altRegion.alternative_region;
+                document.getElementById('altSaving').textContent = `${altRegion.potential_saving_percent}%`;
+                document.getElementById('currentRegion').textContent = `${altRegion.current_region} (${altRegion.current_intensity})`;
+                document.getElementById('currentIntensity').textContent = `${altRegion.alternative_region} (${altRegion.alternative_intensity})`;
+            }
 
             document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString()}`;
         }
